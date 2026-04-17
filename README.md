@@ -1,5 +1,16 @@
 # Roboduck
 
+This is a video game that I developed back for FBLA's High School Competitive Events back in 2022. The code is a bit of a mess, and I would write it much differently if I were to create a game like this nowadays, however the game itself is fully complete and functional. And that is my intended purpose with this project. To demonstrate something fully complete and functional.
+
+
+Table of Contents
+=================
+- [Gameplay](#gameplay)
+- [Windows Build](#windows-build)
+
+
+## Gameplay
+
 In Roboduck you play as a bread-tossing toaster robot exploring the local park, feeding ducks, and avoiding obstacles.
 - By pressing the respective buttons (A and D by default), you move left and right on screen.
 - You can aim and click to throw bread; if the bread hits a duck, you will gain points.
@@ -7,11 +18,6 @@ In Roboduck you play as a bread-tossing toaster robot exploring the local park, 
 - You can collect loaves and other collectibles to add to your bread ammo count.
 - Ducks will walk around randomly, making them harder to hit.
 - Obstacles (trees, lily pads, buildings, etc.) will end the game when hit by the player.
-
-
-Table of Contents
-=================
-- [Windows Build](#windows-build)
 
 
 ## Windows Build
