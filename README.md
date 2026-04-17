@@ -11,10 +11,10 @@ In Roboduck you play as a bread-tossing toaster robot exploring the local park, 
 
 Table of Contents
 =================
-- [Windows Installation](#windows-installation)
+- [Windows Build](#windows-build)
 
 
-## Windows Installation
+## Windows Build
 
 Building Roboduck for Windows requires [Python](https://www.python.org/), [Pygame](https://www.pygame.org/docs/), and [PyInstaller](https://pyinstaller.org/en/stable/).
 
