@@ -25,9 +25,10 @@ pip install pygame
 pip install pyinstaller
 ```
 
-Then you can build Roboduck using:
+Then you can build Roboduck.exe using:
 
 ```shell
 git clone https://github.com/gabekramirez/roboduck.git
+cd roboduck
 pyinstaller main.py -w -n Roboduck -i assets\\roboduckicon.ico -F --add-data assets:assets
 ```
