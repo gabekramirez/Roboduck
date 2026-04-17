@@ -3,6 +3,14 @@ from pygame import *
 from math import floor, copysign
 from random import randint
 from typing import Any, Optional, Union, Callable, Sequence, Tuple, List, Dict
+import os
+import sys
+
+
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
 
 
 ENABLE_CONTROLLERS = True
@@ -11,20 +19,36 @@ IS_MOBILE = False
 
 
 # File Locations
-CONTROLLERS = "assets/controllers.dat"
-KEY_BINDS = "assets/key binds.dat"
-KEY_BIND_DEFAULT = "assets/default key binds.dat"
-LEADERBOARD = "assets/leaderboard.dat"
-FONT_MAIN = "assets/msgothic.ttc"
-FONT_SCORE = "assets/bahnschrift.ttf"
-SCREEN_START = "assets/startscreen.jpg"
-SCREEN_END = "assets/endscreen.jpg"
-SPLASH = "assets/splash.png"
-SHEET_SPRITE = "assets/spritesheet.png"
-SHEET_UI = "assets/controller.png"
-SOUND_MUSIC = "assets/music.ogg"
-SOUND_SFX = ("assets/quack1.ogg", "assets/quack2.ogg", "assets/quack3.ogg", "assets/grass1.ogg", "assets/grass2.ogg",
-             "assets/error.ogg", "assets/cannon.ogg", "assets/levelup.ogg", "assets/gameover.ogg")
+if hasattr(sys, '_MEIPASS'):  # pyinstaller with one file flag
+    TEMP = os.path.join(sys._MEIPASS, "assets") + os.sep
+    PERSIST= os.path.join(os.getenv("APPDATA"), "Roboduck") + os.sep
+    if not os.path.isdir(PERSIST):
+        os.mkdir(PERSIST)
+else:
+    TEMP = "assets" + os.sep
+    PERSIST = "assets" + os.sep
+CONTROLLERS = f"{TEMP}controllers.dat"
+KEY_BIND_DEFAULT = f"{TEMP}default key binds.dat"
+FONT_MAIN = f"{TEMP}msgothic.ttc"
+FONT_SCORE = f"{TEMP}bahnschrift.ttf"
+SCREEN_START = f"{TEMP}startscreen.jpg"
+SCREEN_END = f"{TEMP}endscreen.jpg"
+SPLASH = f"{TEMP}splash.png"
+SHEET_SPRITE = f"{TEMP}spritesheet.png"
+SHEET_UI = f"{TEMP}controller.png"
+SOUND_MUSIC = f"{TEMP}music.ogg"
+SOUND_SFX = (f"{TEMP}quack1.ogg", f"{TEMP}quack2.ogg", f"{TEMP}quack3.ogg", f"{TEMP}grass1.ogg", f"{TEMP}grass2.ogg",
+             f"{TEMP}error.ogg", f"{TEMP}cannon.ogg", f"{TEMP}levelup.ogg", f"{TEMP}gameover.ogg")
+KEY_BINDS = f"{PERSIST}key binds.dat"
+LEADERBOARD = f"{PERSIST}leaderboard.dat"
+if not os.path.isfile(KEY_BINDS):
+    with open(KEY_BIND_DEFAULT, "r") as read_file:
+        with open(KEY_BINDS, "w") as write_file:
+            write_file.write(read_file.read())
+if not os.path.isfile(LEADERBOARD):
+    with open(LEADERBOARD, "w") as write_file:
+        pass
+
 
 # set global variables
 UI_CROP = {
@@ -661,7 +685,7 @@ async def main() -> None:
     mobile_sheet = (mobile_sheet, transform.flip(mobile_sheet, True, False),
                     transform.scale(ui_sheet.subsurface(48, 16, 16, 16), (32, 32)))
     music = mixer.Sound(SOUND_MUSIC)
-    sfx = {f.split('.')[0].split('/')[-1]: mixer.Sound(f) for f in SOUND_SFX}
+    sfx = {f.split('.')[0].split(os.sep)[-1]: mixer.Sound(f) for f in SOUND_SFX}
 
     # initialize display
     def reset_screen() -> None:
@@ -739,11 +763,7 @@ async def main() -> None:
                 anim_timer = 1000
             elif anim_timer <= 3000:
                 splash.set_alpha(255)
-                try:
-                    name = ""
-                except Exception:
-                    name = ""
-                render_text(splash_font, f"(ɔ) 2023, Evil Fish Co. All rights reserved.\nTEST{name}",
+                render_text(splash_font, f"2023, Evil Fish Game",
                             Color("white"), Vector2(0, 176), game_surf, True)
                 if anim_timer <= 2000:
                     grey = game_surf.copy()
@@ -1628,6 +1648,8 @@ async def main() -> None:
             await asyncio.sleep(0)
     if IS_WEB:
         await main()
+    else:
+        quit()
 
 
 asyncio.run(main())
