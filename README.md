@@ -10,10 +10,8 @@ In Roboduck you play as a bread-tossing toaster robot exploring the local park, 
 
 
 Table of Contents
-
 =================
-
-* [Windows Installation](#windows-installation)
+- [Windows Installation](#windows-installation)
 
 
 ## Windows Installation
@@ -23,11 +21,8 @@ Building Roboduck for Windows requires [Python](https://www.python.org/), [Pygam
 Once you have Python and its package manager pip downloaded and installed, Pygame and PyInstaller can be installed with:
 
 ```shell
-
 pip install pygame
-
 pip install pyinstaller
-
 ```
 
 Then you can build Roboduck using:
@@ -35,5 +30,4 @@ Then you can build Roboduck using:
 ```shell
 git clone https://github.com/gabekramirez/roboduck.git
 pyinstaller main.py -w -n Roboduck -i assets\\roboduckicon.ico -F --add-data assets:assets
-
 ```
