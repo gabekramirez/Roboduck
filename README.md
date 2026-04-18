@@ -57,7 +57,7 @@ pip install pygbag
 Then you can build and run Roboduck for the web using:
 
 ```shell
-git clone https://github.com/gabekramirez/roboduck.git
+git clone https://github.com/gabekramirez/Roboduck.git
 pygbag roboduck
 ```
 
