@@ -37,8 +37,8 @@ pip install pyinstaller
 Then you can build Roboduck.exe using:
 
 ```shell
-git clone https://github.com/gabekramirez/roboduck.git
-cd roboduck
+git clone https://github.com/gabekramirez/Roboduck.git
+cd Roboduck
 pyinstaller main.py -w -n Roboduck -i assets\\roboduckicon.ico -F --add-data assets:assets
 ```
 
@@ -58,7 +58,7 @@ Then you can build and run Roboduck for the web using:
 
 ```shell
 git clone https://github.com/gabekramirez/Roboduck.git
-pygbag roboduck
+pygbag Roboduck
 ```
 
 This works, but it is recommended for the web build, however, that you first edit line 11 in main.py to ```IS_WEB = True``` before running pygbag.
