@@ -9,7 +9,6 @@ import sys
 
 ENABLE_CONTROLLERS = True
 IS_WEB = False
-IS_MOBILE = False
 
 
 # File Locations
@@ -67,8 +66,8 @@ CONTROLLER_SENSITIVITY = 0.1
 MENU_TRANSITION_TIME = 700
 S_NUM_TYPES = 7
 S_DECORATOR, S_ROAD, S_OBSTACLE, S_LOAF, S_DUCK, S_BREAD, S_PLAYER = range(S_NUM_TYPES)
-
 GREY_GREEN = (127, 191, 127)
+IS_TOUCH = False
 
 
 class UserInterface:
@@ -102,6 +101,9 @@ class UserInterface:
         self.device: Optional[joystick.Joystick] = None
         self.device_name: str = "Mouse and Keyboard"
         self.device_id: str = KEYBOARD_ID
+        if device == -2:
+            device = -1
+            self.device_name = "Touch"
         if device != -1:
             self.device = joystick.Joystick(device)
             self.device_name = self.device.get_name()
@@ -356,7 +358,7 @@ class Sprite:
             self.draw_feet(screen)
         elif self.sprite_type == S_BREAD:
             self.draw_shadow(screen, player, player_speed)
-        elif self is player and not IS_MOBILE:
+        elif self is player and not IS_TOUCH:
             self.draw_laser(screen, ui, bar_mode, pause, aim_override)
         costume = self.get_image()
         screen.blit(costume, self.get_screen_position()[:])
@@ -416,12 +418,8 @@ class Button:
         self.img = None
         self.update_text(text)
         self.position = Vector2(0, 0)
-        if IS_MOBILE:
-            self.hover_sound = False
-            self.click_sound = hover_sound
-        else:
-            self.hover_sound = hover_sound
-            self.click_sound = click_sound
+        self.hover_sound = hover_sound
+        self.click_sound = click_sound
         self.animate = animate
         self.hover = False
 
@@ -463,10 +461,10 @@ class Button:
         Updates and returns if the button has been pressed
         """
 
-        animate = self.animate and not (only_widget or IS_MOBILE)
+        animate = self.animate and not (only_widget or IS_TOUCH)
         mouse_p = mouse_pos(bar_mode)
         last_hover = self.hover
-        hover_amount = Vector2(0, (1 + animate)) * (not IS_MOBILE)
+        hover_amount = Vector2(0, (1 + animate)) * (not IS_TOUCH)
         if trans:
             self.hover = False
             if animate:
@@ -480,7 +478,7 @@ class Button:
             return True
         elif self.hover:
             if not last_hover:
-                if self.hover_sound:
+                if self.hover_sound and not IS_TOUCH:
                     self.hover_sound.play()
                 self.position -= hover_amount
             if (quick_keys.tapped("Click"), quick_keys.tapped("qEnter") or quick_keys.tapped("qEnter2"))[tabbed]:
@@ -686,11 +684,8 @@ async def main() -> None:
         nonlocal screen, screen_full
 
         display.quit()
-        if IS_MOBILE:
-            screen = display.set_mode(screen_size, FULLSCREEN)
-        else:
-            screen = display.set_mode(screen_size, RESIZABLE)
-            screen_full = False
+        screen = display.set_mode(screen_size, RESIZABLE)
+        screen_full = False
         display.set_icon(sprite_sheet.subsurface(48, 128, 16, 16))
         display.set_caption("Roboduck")
 
@@ -739,8 +734,7 @@ async def main() -> None:
         nonlocal level, sprites, player_y, player_last_y, player_speed, duck_speed
         nonlocal transition1, transition2, trans_dir, total_time, old_mode, background, last_aim
 
-        if not (IS_MOBILE and mode == "play"):
-            screen.fill(Color("black"))
+        screen.fill(Color("black"))
         game_surf = Surface((RESOLUTION, RESOLUTION)).convert_alpha()
         game_surf.fill((0, 0, 0, 0))
         game_screen = get_game_screen(bar_mode)
@@ -809,30 +803,6 @@ async def main() -> None:
                 top_left[0] = 0
             if game_screen.topleft[1] > 0:
                 top_left[1] = 0
-
-            if IS_MOBILE and not pause:
-                s = display.get_window_size()
-                if s != last_size:
-                    last_size = s
-                    if s[0] > s[1]:
-                        mobile_box_size = (s[0] - game_screen.width) / 2, game_screen.height
-                        mobile_box[0].update((0, 0), mobile_box_size)
-                        mobile_box[1].update((mobile_box_size[0] + game_screen.width, 0), mobile_box_size)
-                    else:
-                        mobile_box_size = game_screen.width / 2, (s[1] - game_screen.height) / 2
-                        h = s[1] - mobile_box_size[1]
-                        mobile_box[0].update((0, h), mobile_box_size)
-                        mobile_box[1].update((mobile_box_size[0], h), mobile_box_size)
-                    s = Vector2(game_screen.size) * 32 / RESOLUTION
-                    mobile_box[2].update((game_screen.right - s[0], game_screen.top), s)
-                    if mobile_box[2].collidepoint(quick_keys.current[2]):
-                        mobile_sheet[2].set_alpha(None)
-                    else:
-                        mobile_sheet[2].set_alpha(127)
-                    screen.fill("black")
-                    for i in range(2):
-                        screen.blit(transform.scale(mobile_sheet[i], mobile_box[i].size), mobile_box[i].topleft)
-                game_surf.blit(mobile_sheet[2], (RESOLUTION - 32, 0))
 
             if score != last_score:
                 score_i = 0
@@ -976,9 +946,7 @@ async def main() -> None:
             for i, widget in enumerate(widgets[1]):
                 if widget.update(quick_keys, bar_mode, not blit, tabbed_widget == i):
                     tabbed_widget = None
-                    if IS_MOBILE and widget.text.lower() == "display":
-                        sfx["error"].play()
-                    elif widget.text.lower() == "back":
+                    if widget.text.lower() == "back":
                         trans(blit, old_mode, MENU_TRANSITION_TIME, True)
                     else:
                         trans(blit, widget.text.lower(), MENU_TRANSITION_TIME)
@@ -1023,13 +991,9 @@ async def main() -> None:
                         volume_effect = widget.value * 100
             game_surf.blits(widgets_draw[3])
         elif mode == "keybinds":
-            if IS_MOBILE:
-                render_text(use_font, "Mobile instructions", Color("dark blue"),
-                            Vector2(8, 0), game_surf, center=True)
-                if widgets[4][-1].update(quick_keys, bar_mode, not blit, only_widget=True):
-                    tabbed_widget = None
-                    trans(blit, old_mode, MENU_TRANSITION_TIME, True)
-                game_surf.blit(*widgets_draw[4][-1])
+            if IS_TOUCH:
+                render_text(use_font, "Hold bottom section\nof screen to move\n\nTap to shoot", Color("dark blue"),
+                            Vector2(0, 48), game_surf, center=True)
             else:
                 for i, k in enumerate(list(ui.key_binds.keys())[QUICK_KEYBINDS:]):
                     render_text(use_font, k, Color("dark blue"), Vector2(100, RESOLUTION // 2 - 86 + i * 20), game_surf)
@@ -1037,33 +1001,38 @@ async def main() -> None:
                         i += 1
                         widgets[4][i].set_image(ui.get_image(k, use_font))
                         widgets_draw[4][i] = widgets[4][i].get_image()
-                handle_tabs(len(widgets[4]))
-                for i, widget in enumerate(widgets[4]):
-                    if widget.update(quick_keys, bar_mode, not blit, tabbed_widget == i):
-                        if widget.text == "Reset":
+            handle_tabs(len(widgets[4]))
+            for i, widget in enumerate(widgets[4]):
+                if widget.update(quick_keys, bar_mode, not blit, tabbed_widget == i):
+                    if widget.text == "Reset":
+                        if not IS_TOUCH:
                             write(KEY_BINDS, read(KEY_BIND_DEFAULT))
                             ui.load(KEY_BINDS)
                             keybind_select, keybind_selected = 0, 0
-                        elif widget.text == "Back":
-                            tabbed_widget = None
-                            trans(blit, old_mode, MENU_TRANSITION_TIME, True)
+                    elif widget.text == "Back":
+                        tabbed_widget = None
+                        trans(blit, old_mode, MENU_TRANSITION_TIME, True)
+                        if not IS_TOUCH:
                             ui.save(KEY_BINDS)
-                            keybind_select, keybind_selected = 0, 0
-                        elif widget.text != "":
-                            update_ui()
-                            if (not ENABLE_CONTROLLERS) or len(uis) == 1:
-                                sfx["error"].play()
+                        keybind_select, keybind_selected = 0, 0
+                    elif widget.text != "":
+                        update_ui()
+                        if (not ENABLE_CONTROLLERS) or len(uis) == 1:
+                            sfx["error"].play()
+                        else:
+                            w_sfx.play()
+                            if not IS_TOUCH:
+                                ui.save(KEY_BINDS)
+                            if uis.index(ui) == len(uis) - 1:
+                                select_ui(0)
                             else:
-                                w_sfx.play()
-                                if uis.index(ui) == len(uis) - 1:
-                                    select_ui(0)
-                                else:
-                                    select_ui(uis.index(ui) + 1)
-                            widget.update_text(f"Device: {ui.device_name}")
-                            widgets_draw[4][i] = widget.get_image()
-                            widget.center()
-                            keybind_select, keybind_selected = 0, 0
-                        elif keybind_select and i - 1 == keybind_selected:
+                                select_ui(uis.index(ui) + 1)
+                        widget.update_text(f"Device: {ui.device_name}")
+                        widgets_draw[4][i] = widget.get_image()
+                        widget.center()
+                        keybind_select, keybind_selected = 0, 0
+                    elif not IS_TOUCH:
+                        if keybind_select and i - 1 == keybind_selected:
                             keybind_select, keybind_selected = 0, 0
                         else:
                             new_img = widget.img.copy()
@@ -1072,7 +1041,10 @@ async def main() -> None:
                             widgets_draw[4][i] = widget.get_image()
                             keybind_select = 1
                             keybind_selected = i - 1
-                game_surf.blits(widgets_draw[4])
+                if IS_TOUCH:
+                    game_surf.blits([widgets_draw[4][0], widgets_draw[4][-1]])
+                else:
+                    game_surf.blits(widgets_draw[4])
         elif mode == "help":
             game_surf.fill(Color("grey 25"))
             render_text(use_font, "Throw bread at ducks to earn points\n"
@@ -1131,11 +1103,13 @@ async def main() -> None:
             uis.append(UI(len(uis) - 1, ui_sheet))
 
     def select_ui(index: int) -> None:
+        global IS_TOUCH
         nonlocal ui
 
         ui = uis[index]
         ui.load(KEY_BINDS)
         ui.update()
+        IS_TOUCH = (ui.device_name == "Touch")
 
     def get_leaderboard_position() -> Optional[int]:
         for i, line in enumerate(read(LEADERBOARD)):
@@ -1146,25 +1120,25 @@ async def main() -> None:
     def handle_tabs(number_of_buttons: int) -> None:
         nonlocal tabbed_widget
 
-        if movement:
-            tabbed_widget = None
-        elif quick_keys.tapped("qTab"):
-            if tabbed_widget is None:
-                if quick_keys.pressed("qReverse"):
-                    tabbed_widget = number_of_buttons - 1
+        if not IS_TOUCH:
+            if movement:
+                tabbed_widget = None
+            elif quick_keys.tapped("qTab"):
+                if tabbed_widget is None:
+                    if quick_keys.pressed("qReverse"):
+                        tabbed_widget = number_of_buttons - 1
+                    else:
+                        tabbed_widget = 0
                 else:
-                    tabbed_widget = 0
-            else:
-                tabbed_widget += 1 * (1 - 2 * quick_keys.pressed("qReverse"))
-                tabbed_widget %= number_of_buttons
+                    tabbed_widget += 1 * (1 - 2 * quick_keys.pressed("qReverse"))
+                    tabbed_widget %= number_of_buttons
 
     quick_keys = UI(img=ui_sheet)
-    uis = [quick_keys]
+    uis = [quick_keys, UI(-2, ui_sheet)]
     ui = quick_keys
     select_ui(0)
     keybind_select = 0
     keybind_selected = 0
-    mobile_box = [Rect(0, 0, 0, 0), Rect(0, 0, 0, 0), Rect(0, 0, 0, 0)]
     score_name: Optional[str] = None
     w_sfx = sfx["quack1"]
     widgets: List[List[Union[Button, Slider]]] = [
@@ -1322,11 +1296,18 @@ async def main() -> None:
             self.position[1] += 5
         if fps > 0:
             player_speed[1] = 0.5 + player_total_y / (total_length * 32)
-            if IS_MOBILE and not pause:
+            if IS_TOUCH and not pause:
                 mx = 0
                 if quick_keys.pressed("Click"):
-                    mx = quick_keys.current[2]
-                    mx = mobile_box[1].collidepoint(mx) - mobile_box[0].collidepoint(mx)
+                    game_screen = get_game_screen(bar_mode)
+                    screen_x = (self.position[0] + 120) / 240 * game_screen.width + game_screen.left
+                    screen_y = (quick_keys.current[2][1] + game_screen.top) / game_screen.height
+                    if screen_y >= 0.85 and abs(quick_keys.current[2][0] - screen_x) > 10:
+                        if quick_keys.current[2][0] > screen_x:
+                            mx = 1
+                        else:
+                            mx = -1
+                    # mx = mobile_box[1].collidepoint(mx) - mobile_box[0].collidepoint(mx)
             else:
                 mx = ui.pressed("Right") - ui.pressed("Left")
             m = Vector2(mx, 0) * 128 / fps
@@ -1600,7 +1581,7 @@ async def main() -> None:
                 elif keybind_select == 3 and ui_any is None:
                     keybind_select = 0
             elif mode == "play":
-                if quick_keys.tapped("Menu") or (IS_MOBILE and quick_keys.tapped("Click") and mobile_box[2].collidepoint(quick_keys.current[2])):
+                if quick_keys.tapped("Menu") or (IS_TOUCH and quick_keys.tapped("Click") and not get_game_screen(bar_mode).collidepoint(quick_keys.current[2])):
                     pause = not pause
                 if not pause:
                     if fps > 0:
@@ -1621,7 +1602,9 @@ async def main() -> None:
                     if aim_init != (0, 0):
                         aim.update(aim_init)
                     del aim_init
-                    if ui.tapped("Throw") and not (player_sprite.mode == "gameover" or (IS_MOBILE and any([i.collidepoint(quick_keys.current[2]) for i in mobile_box]))):
+                    game_screen = get_game_screen(bar_mode)
+                    screen_y = (quick_keys.current[2][1] + game_screen.top) / game_screen.height
+                    if (ui.tapped("Throw") or (IS_TOUCH and quick_keys.tapped("Click") and screen_y < 0.85)) and player_sprite.mode != "gameover":
                         if ammo == 0:
                             sfx["error"].play()
                         else:
